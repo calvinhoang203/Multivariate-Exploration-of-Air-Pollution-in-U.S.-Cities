@@ -14,7 +14,6 @@ Open R (or RStudio) and run:
 
 ```r
 install.packages(c(
-  "mlbench",   # Glass & Pima datasets
   "HSAUR2",    # US air pollution dataset
   "ggplot2",   # Visualization
   "dplyr"      # Data manipulation
