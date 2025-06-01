@@ -1,0 +1,118 @@
+---
+title: "Analysis on Air Pollution in US Citites"
+author: "Hieu Hoang"
+date: "2025-05-29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(HSAUR2)
+library(ggplot2)
+library(dplyr)
+library(tools)
+library(MASS)  # For LDA/QDA
+library(klaR)  # For Box's M test
+library(psych) # For pairs.panels
+library(corrplot) # For correlation plots
+```
+
+```{r}
+# Load the data
+air_data <- USairpollution
+air_data
+```
+
+```{r}
+# Basic data exploration
+str(air_data)
+summary(air_data)
+```
+
+```{r}
+# Create a correlation matrix
+cor_matrix <- cor(air_data)
+cor_matrix
+
+# Visualize correlation matrix
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.srt = 45, addCoef.col = "black")
+```
+
+```{r}
+# Create pairs plot to visualize relationships between variables
+pairs.panels(air_data, 
+             method = "pearson", 
+             hist.col = "#00AFBB",
+             density = TRUE, 
+             ellipses = TRUE)
+```
+
+```{r}
+# Create boxplots for each variable
+par(mfrow = c(2, 4))
+for(i in 1:ncol(air_data)) {
+  boxplot(air_data[,i], main = names(air_data)[i], col = "lightblue")
+}
+par(mfrow = c(1, 1))
+```
+
+```{r}
+# Create scatterplots of SO2 against each predictor
+par(mfrow = c(2, 3))
+for(i in 2:ncol(air_data)) {
+  plot(air_data[,i], air_data$SO2, 
+       xlab = names(air_data)[i], 
+       ylab = "SO2", 
+       main = paste("SO2 vs", names(air_data)[i]),
+       pch = 19, col = "blue")
+  abline(lm(air_data$SO2 ~ air_data[,i]), col = "red")
+}
+par(mfrow = c(1, 1))
+```
+
+```{r}
+# Create a heatmap of the data
+# First, scale the data
+scaled_data <- scale(air_data)
+heatmap(as.matrix(scaled_data), 
+        col = colorRampPalette(c("blue", "white", "red"))(100),
+        main = "Heatmap of Air Pollution Data",
+        xlab = "Variables", 
+        ylab = "Cities")
+```
+
+```{r}
+# Create a barplot of SO2 levels by city
+# Sort cities by SO2 level
+sorted_data <- air_data[order(air_data$SO2, decreasing = TRUE),]
+barplot(sorted_data$SO2, 
+        names.arg = rownames(sorted_data),
+        las = 2, 
+        cex.names = 0.7,
+        col = "steelblue",
+        main = "SO2 Levels by City",
+        ylab = "SO2 (micrograms per cubic meter)")
+```
+
+```{r}
+# Prepare for multivariate analysis by categorizing cities by pollution level
+# Create a new variable for pollution level based on SO2 quartiles
+air_data$pollution_level <- cut(air_data$SO2, 
+                               breaks = quantile(air_data$SO2, probs = c(0, 0.25, 0.5, 0.75, 1)),
+                               labels = c("Very Low", "Low", "Medium", "High"),
+                               include.lowest = TRUE)
+
+# Check the distribution of pollution levels
+table(air_data$pollution_level)
+
+# Visualize the distribution of pollution levels
+barplot(table(air_data$pollution_level), 
+        col = c("green", "lightgreen", "orange", "red"),
+        main = "Distribution of Pollution Levels",
+        xlab = "Pollution Level",
+        ylab = "Number of Cities")
+```
