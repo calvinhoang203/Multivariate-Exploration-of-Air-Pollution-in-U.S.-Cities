@@ -164,26 +164,108 @@ print(paste("LDA Accuracy:", round(lda_accuracy * 100, 2), "%"))
 ```
 
 ```{r}
-# -----------------------------------------
-# 1. Prepare the data for PCA (all predictors)
-# -----------------------------------------
-# We will exclude SO2 (the response) and the newly created pollution_level.
-# The remaining numeric columns form our predictor matrix:
-predictors <- air_data[, c("temp", "wind", "precip", "predays", "manuf", "popul")]
 
-# Check for any missing values (should be none in USairpollution)
-sum(is.na(predictors))
+# Prepare the predictor matrix (drop SO2 and pollution_level)
+predictors <- air_data[, c("temp", "wind", "precip", "predays", "manu", "popul")]
 
-# Scale each variable to mean=0, sd=1 before PCA
+# Confirm no missing values
+sum(is.na(predictors))   # should return 0
+
+# Scale predictors to mean=0, sd=1
 predictors_scaled <- scale(predictors)
 
-# -----------------------------------------
-# 2. Run PCA
-# -----------------------------------------
-pca_all <- prcomp(predictors_scaled, center = TRUE, scale. = FALSE)  
-# (we already scaled manually, so scale.=FALSE here)
+# Run PCA on scaled predictors
+pca_all <- prcomp(predictors_scaled, center = TRUE, scale. = FALSE)
 
-# View a summary: eigenvalues, proportion of variance, cumulative variance
-pca_summary <- summary(pca_all)
-pca_summary
+# Examine summary (eigenvalues, proportion of variance, cumulative)
+summary(pca_all)
+
+```
+
+
+```{r}
+# Extract eigenvalues and calculate proportions
+eigenvalues <- pca_all$sdev^2
+prop_var    <- eigenvalues / sum(eigenvalues)
+cum_var     <- cumsum(prop_var)
+
+# Scree plot: eigenvalues vs. PC index
+plot(
+  x = seq_along(eigenvalues),
+  y = eigenvalues,
+  type = "b",
+  pch = 19,
+  col = "steelblue",
+  xlab = "Principal Component",
+  ylab = "Eigenvalue",
+  main = "Scree Plot: Eigenvalues of PCs"
+)
+abline(h = mean(eigenvalues), col = "red", lty = 2)
+legend(
+  "topright",
+  legend = c("Eigenvalues", "Average Eigenvalue = 1"),
+  col    = c("steelblue", "red"),
+  pch    = c(19, NA),
+  lty    = c(NA, 2),
+  bty    = "n"
+)
+
+
+```
+
+```{r}
+# Cumulative variance plot
+plot(
+  x = seq_along(eigenvalues),
+  y = cum_var,
+  type = "b",
+  pch = 19,
+  col = "darkgreen",
+  xlab = "Principal Component",
+  ylab = "Cumulative Proportion",
+  main = "Cumulative Variance Explained"
+)
+abline(h = 0.80, col = "orange", lty = 2)
+legend(
+  "bottomright",
+  legend = c("Cumulative Variance", "80% Threshold"),
+  col    = c("darkgreen", "orange"),
+  pch    = c(19, NA),
+  lty    = c(NA, 2),
+  bty    = "n"
+)
+```
+
+```{r}
+# Inspect loadings (rotation matrix)
+round(pca_all$rotation, 3)
+```
+```{r}
+# Biplot for PC1 vs PC2
+biplot(pca_all, scale = 0, cex = 0.6, main = "PCA Biplot (PC1 vs PC2)")
+```
+
+```{r}
+# Add PC scores back to original data, color by pollution_level
+scores <- as.data.frame(pca_all$x)
+scores$city            <- rownames(air_data)
+scores$pollution_level <- air_data$pollution_level
+
+ggplot(scores, aes(x = PC1, y = PC2, color = pollution_level)) +
+  geom_point(size = 2) +
+  geom_text(aes(label = city), hjust = 1.05, vjust = 0.5, size = 2.5) +
+  scale_color_manual(values = c(
+    "Very Low" = "green4",
+    "Low"      = "chartreuse3",
+    "Medium"   = "gold",
+    "High"     = "red"
+  )) +
+  labs(
+    title = "PC1 vs PC2: Cities Colored by Pollution Level",
+    x     = "Principal Component 1",
+    y     = "Principal Component 2"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
+```
 
