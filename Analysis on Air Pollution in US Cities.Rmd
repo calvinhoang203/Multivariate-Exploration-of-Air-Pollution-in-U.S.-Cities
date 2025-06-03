@@ -120,3 +120,45 @@ barplot(table(air_data$pollution_level),
         ylab = "Number of Cities")
 ```
 
+```{r}
+pca_res <- prcomp(air_data[, c("SO2", "temp", "popul")], scale. = TRUE)
+summary(pca_res)
+```
+
+```{r}
+plot(pca_res, type = "l")
+```
+
+```{r}
+library(MASS) 
+
+X <- air_data[, c("SO2", "temp", "popul")]
+Y <- air_data$pollution_level
+data_all <- data.frame(Y = Y, X)
+
+data_all$Y <- factor(data_all$Y)
+
+set.seed(100)
+train_idx <- sample(1:nrow(data_all), 0.8 * nrow(data_all))  # 80% train
+train_data <- data_all[train_idx, ]
+test_data <- data_all[-train_idx, ]
+
+# === QDA ===
+qda_model <- qda(Y ~ ., data = train_data)
+qda_pred <- predict(qda_model, newdata = test_data)
+qda_conf_matrix <- table(Predicted = qda_pred$class, Actual = test_data$Y)
+qda_accuracy <- sum(diag(qda_conf_matrix)) / sum(qda_conf_matrix)
+print("QDA Confusion Matrix:")
+print(qda_conf_matrix)
+print(paste("QDA Accuracy:", round(qda_accuracy * 100, 2), "%"))
+
+# === LDA ===
+lda_model <- lda(Y ~ ., data = train_data)
+lda_pred <- predict(lda_model, newdata = test_data)
+lda_conf_matrix <- table(Predicted = lda_pred$class, Actual = test_data$Y)
+lda_accuracy <- sum(diag(lda_conf_matrix)) / sum(lda_conf_matrix)
+print("LDA Confusion Matrix:")
+print(lda_conf_matrix)
+print(paste("LDA Accuracy:", round(lda_accuracy * 100, 2), "%"))
+
+```
