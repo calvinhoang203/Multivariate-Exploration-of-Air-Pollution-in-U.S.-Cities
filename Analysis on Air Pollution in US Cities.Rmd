@@ -162,3 +162,28 @@ print(lda_conf_matrix)
 print(paste("LDA Accuracy:", round(lda_accuracy * 100, 2), "%"))
 
 ```
+
+```{r}
+# -----------------------------------------
+# 1. Prepare the data for PCA (all predictors)
+# -----------------------------------------
+# We will exclude SO2 (the response) and the newly created pollution_level.
+# The remaining numeric columns form our predictor matrix:
+predictors <- air_data[, c("temp", "wind", "precip", "predays", "manuf", "popul")]
+
+# Check for any missing values (should be none in USairpollution)
+sum(is.na(predictors))
+
+# Scale each variable to mean=0, sd=1 before PCA
+predictors_scaled <- scale(predictors)
+
+# -----------------------------------------
+# 2. Run PCA
+# -----------------------------------------
+pca_all <- prcomp(predictors_scaled, center = TRUE, scale. = FALSE)  
+# (we already scaled manually, so scale.=FALSE here)
+
+# View a summary: eigenvalues, proportion of variance, cumulative variance
+pca_summary <- summary(pca_all)
+pca_summary
+
