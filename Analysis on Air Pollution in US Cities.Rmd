@@ -186,32 +186,6 @@ summary(pca_all)
 round(pca_all$rotation, 3)
 ```
 
-```{r}
-# Add PC scores back to original data, color by pollution_level
-scores <- as.data.frame(pca_all$x)
-scores$city            <- rownames(air_data)
-scores$pollution_level <- air_data$pollution_level
-
-ggplot(scores, aes(x = PC1, y = PC2, color = pollution_level)) +
-  geom_point(size = 2) +
-  geom_text(aes(label = city), hjust = 1.05, vjust = 0.5, size = 2.5) +
-  scale_color_manual(values = c(
-    "Very Low" = "green4",
-    "Low"      = "chartreuse3",
-    "Medium"   = "gold",
-    "High"     = "red"
-  )) +
-  labs(
-    title = "PC1 vs PC2: Cities Colored by Pollution Level",
-    x     = "Principal Component 1",
-    y     = "Principal Component 2"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
-```
-
-
-
 
 
 ```{r}
@@ -277,23 +251,29 @@ legend(
   bty    = "n"
 )
 ```
+
+
+
 ```{r}
-# Prepare the matrix of scaled predictors (same as PCA input)
-mat <- as.matrix(predictors_scaled)
-rownames(mat) <- rownames(air_data)  # city names
-colnames(mat) <- colnames(predictors) # temp, wind, precip, predays, manu, popul
+# Add PC scores back to original data, color by pollution_level
+scores <- as.data.frame(pca_all$x)
+scores$city            <- rownames(air_data)
+scores$pollution_level <- air_data$pollution_level
 
-# Draw the heatmap
-heatmap(
-  mat,
-  Colv = NA,             # do not reorder columns
-  Rowv = NA,             # do not reorder rows
-  scale = "none",        # already scaled
-  col   = colorRampPalette(c("navy", "white", "firebrick"))(100),
-  margins = c(6, 8),     # room for labels
-  main    = "Heatmap of Scaled Predictors",
-  xlab    = "Variables",
-  ylab    = "Cities"
-)
+ggplot(scores, aes(x = PC1, y = PC2, color = pollution_level)) +
+  geom_point(size = 2) +
+  geom_text(aes(label = city), hjust = 1.05, vjust = 0.5, size = 2.5) +
+  scale_color_manual(values = c(
+    "Very Low" = "green4",
+    "Low"      = "chartreuse3",
+    "Medium"   = "gold",
+    "High"     = "red"
+  )) +
+  labs(
+    title = "PC1 vs PC2: Cities Colored by Pollution Level",
+    x     = "Principal Component 1",
+    y     = "Principal Component 2"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_blank())
 ```
-
