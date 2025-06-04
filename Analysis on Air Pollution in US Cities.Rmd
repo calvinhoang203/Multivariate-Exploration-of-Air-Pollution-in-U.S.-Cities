@@ -21,6 +21,7 @@ library(klaR)  # For Box's M test
 library(psych) # For pairs.panels
 library(corrplot) # For correlation plots
 library(heplots) # For Box's M test
+library(MASS) 
 ```
 
 ```{r}
@@ -130,8 +131,6 @@ plot(pca_res, type = "l")
 ```
 
 ```{r}
-library(MASS) 
-
 X <- air_data[, c("SO2", "temp", "popul")]
 Y <- air_data$pollution_level
 data_all <- data.frame(Y = Y, X)
@@ -164,7 +163,6 @@ print(paste("LDA Accuracy:", round(lda_accuracy * 100, 2), "%"))
 ```
 
 ```{r}
-
 # Prepare the predictor matrix (drop SO2 and pollution_level)
 predictors <- air_data[, c("temp", "wind", "precip", "predays", "manu", "popul")]
 
@@ -184,65 +182,8 @@ summary(pca_all)
 
 
 ```{r}
-# Extract eigenvalues and calculate proportions
-eigenvalues <- pca_all$sdev^2
-prop_var    <- eigenvalues / sum(eigenvalues)
-cum_var     <- cumsum(prop_var)
-
-# Scree plot: eigenvalues vs. PC index
-plot(
-  x = seq_along(eigenvalues),
-  y = eigenvalues,
-  type = "b",
-  pch = 19,
-  col = "steelblue",
-  xlab = "Principal Component",
-  ylab = "Eigenvalue",
-  main = "Scree Plot: Eigenvalues of PCs"
-)
-abline(h = mean(eigenvalues), col = "red", lty = 2)
-legend(
-  "topright",
-  legend = c("Eigenvalues", "Average Eigenvalue = 1"),
-  col    = c("steelblue", "red"),
-  pch    = c(19, NA),
-  lty    = c(NA, 2),
-  bty    = "n"
-)
-
-
-```
-
-```{r}
-# Cumulative variance plot
-plot(
-  x = seq_along(eigenvalues),
-  y = cum_var,
-  type = "b",
-  pch = 19,
-  col = "darkgreen",
-  xlab = "Principal Component",
-  ylab = "Cumulative Proportion",
-  main = "Cumulative Variance Explained"
-)
-abline(h = 0.80, col = "orange", lty = 2)
-legend(
-  "bottomright",
-  legend = c("Cumulative Variance", "80% Threshold"),
-  col    = c("darkgreen", "orange"),
-  pch    = c(19, NA),
-  lty    = c(NA, 2),
-  bty    = "n"
-)
-```
-
-```{r}
 # Inspect loadings (rotation matrix)
 round(pca_all$rotation, 3)
-```
-```{r}
-# Biplot for PC1 vs PC2
-biplot(pca_all, scale = 0, cex = 0.6, main = "PCA Biplot (PC1 vs PC2)")
 ```
 
 ```{r}
@@ -267,5 +208,92 @@ ggplot(scores, aes(x = PC1, y = PC2, color = pollution_level)) +
   ) +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_blank())
+```
+
+
+
+
+
+```{r}
+
+# Compute eigenvalues (variance explained by each PC)
+eigenvalues <- pca_all$sdev^2
+
+# Compute proportion of variance explained by each PC
+prop_var <- eigenvalues / sum(eigenvalues)
+
+# Compute cumulative contribution ratio (Cr)
+Cr <- cumsum(prop_var)
+
+# Print Cr for each PC
+Cr
+
+# Find the smallest k such that Cr[k] ≥ 0.80 (i.e., 80%)
+k80 <- which(Cr >= 0.80)[1]
+cat("Keep", k80, "components to cover at least 80% of variance\n")
+
+
+```
+
+
+
+```{r}
+# Plot the Cr curve with a horizontal line at 0.80
+plot(
+  x = seq_along(Cr),
+  y = Cr,
+  type = "b",
+  pch = 19,
+  col = "steelblue",
+  xlab = "Principal Component",
+  ylab = "Cumulative Contribution (Cr)",
+  main = "Cumulative Contribution Ratio"
+)
+abline(h = 0.80, col = "red", lty = 2)
+text(k80, Cr[k80] + 0.03, paste0("k = ", k80), col = "red")
+```
+
+```{r}
+# Scree Plot
+# Plot eigenvalues versus component index
+plot(
+  x = seq_along(eigenvalues),
+  y = eigenvalues,
+  type = "b",
+  pch = 19,
+  col = "darkgreen",
+  xlab = "Principal Component",
+  ylab = "Eigenvalue",
+  main = "Scree Plot"
+)
+# 2. Draw a horizontal line at the average eigenvalue (Kaiser criterion)
+abline(h = mean(eigenvalues), col = "orange", lty = 2)
+legend(
+  "topright",
+  legend = c("Eigenvalues", "Average = 1"),
+  col    = c("darkgreen", "orange"),
+  pch    = c(19, NA),
+  lty    = c(NA, 2),
+  bty    = "n"
+)
+```
+```{r}
+# Prepare the matrix of scaled predictors (same as PCA input)
+mat <- as.matrix(predictors_scaled)
+rownames(mat) <- rownames(air_data)  # city names
+colnames(mat) <- colnames(predictors) # temp, wind, precip, predays, manu, popul
+
+# Draw the heatmap
+heatmap(
+  mat,
+  Colv = NA,             # do not reorder columns
+  Rowv = NA,             # do not reorder rows
+  scale = "none",        # already scaled
+  col   = colorRampPalette(c("navy", "white", "firebrick"))(100),
+  margins = c(6, 8),     # room for labels
+  main    = "Heatmap of Scaled Predictors",
+  xlab    = "Variables",
+  ylab    = "Cities"
+)
 ```
 
