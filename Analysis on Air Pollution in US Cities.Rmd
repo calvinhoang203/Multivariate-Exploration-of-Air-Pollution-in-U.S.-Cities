@@ -30,6 +30,7 @@ air_data <- USairpollution
 air_data
 ```
 
+
 ```{r}
 # Basic data exploration
 str(air_data)
@@ -181,10 +182,6 @@ summary(pca_all)
 ```
 
 
-```{r}
-# Inspect loadings (rotation matrix)
-round(pca_all$rotation, 3)
-```
 
 
 
@@ -192,23 +189,20 @@ round(pca_all$rotation, 3)
 
 # Compute eigenvalues (variance explained by each PC)
 eigenvalues <- pca_all$sdev^2
-
-# Compute proportion of variance explained by each PC
-prop_var <- eigenvalues / sum(eigenvalues)
-
-# Compute cumulative contribution ratio (Cr)
-Cr <- cumsum(prop_var)
-
-# Print Cr for each PC
-Cr
-
-# Find the smallest k such that Cr[k] ≥ 0.80 (i.e., 80%)
-k80 <- which(Cr >= 0.80)[1]
-cat("Keep", k80, "components to cover at least 80% of variance\n")
-
+eigenvalues
 
 ```
+```{r}
+# Compute proportion of variance explained by each PC
+prop_var <- eigenvalues / sum(eigenvalues)
+prop_var
+```
 
+```{r}
+# Compute cumulative contribution ratio (Cr)
+Cr <- cumsum(prop_var)
+Cr
+```
 
 
 ```{r}
@@ -240,7 +234,7 @@ plot(
   ylab = "Eigenvalue",
   main = "Scree Plot"
 )
-# 2. Draw a horizontal line at the average eigenvalue (Kaiser criterion)
+# Draw a horizontal line at the average eigenvalue (Kaiser criterion)
 abline(h = mean(eigenvalues), col = "orange", lty = 2)
 legend(
   "topright",
@@ -251,29 +245,49 @@ legend(
   bty    = "n"
 )
 ```
+```{r}
+# The rotation matrix contains the loadings (weights) of each original variable on each PC
+loadings <- pca_all$rotation
+
+# View the loadings to three decimal places
+round(loadings, 3)
+```
 
 
 
 ```{r}
-# Add PC scores back to original data, color by pollution_level
-scores <- as.data.frame(pca_all$x)
-scores$city            <- rownames(air_data)
-scores$pollution_level <- air_data$pollution_level
+# Add absolute loading for circle sizing
+df_long$AbsLoading <- abs(df_long$Loading)
 
-ggplot(scores, aes(x = PC1, y = PC2, color = pollution_level)) +
-  geom_point(size = 2) +
-  geom_text(aes(label = city), hjust = 1.05, vjust = 0.5, size = 2.5) +
-  scale_color_manual(values = c(
-    "Very Low" = "green4",
-    "Low"      = "chartreuse3",
-    "Medium"   = "gold",
-    "High"     = "red"
-  )) +
-  labs(
-    title = "PC1 vs PC2: Cities Colored by Pollution Level",
-    x     = "Principal Component 1",
-    y     = "Principal Component 2"
+# Plot a bubble-heatmap of loadings (variables × principal components)
+ggplot(df_long, aes(x = PC, y = Variable)) +
+  geom_point(aes(size = AbsLoading, fill = Loading),
+             shape = 21,         # circle with fill
+             color = "black",    # black border
+             stroke = 0.2) +     # thin outline
+  scale_fill_gradient2(
+    low      = "navy",
+    mid      = "white",
+    high     = "firebrick",
+    midpoint = 0,
+    limits   = c(-1, 1),
+    name     = "Loading\n(− → +)"
   ) +
-  theme_minimal() +
-  theme(legend.position = "bottom", legend.title = element_blank())
+  scale_size_continuous(
+    range = c(2, 12),
+    name  = "|Loading|"
+  ) +
+  coord_flip() + 
+  labs(
+    title = "PCA Loadings Heatmap",
+    x     = "Principal Component",
+    y     = "Original Variable"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.x         = element_text(angle = 45, hjust = 1),
+    panel.grid.major.y  = element_blank(),
+    legend.position     = "right"
+  )
 ```
+
