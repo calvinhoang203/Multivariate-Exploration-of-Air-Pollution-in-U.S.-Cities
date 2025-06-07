@@ -314,7 +314,7 @@ barplot(table(air_data$pollution_level),
         ylab = "Number of Cities")
 ```
 ```{r}
-predictors <- air_data[, c("manu", "popul","precip", "predays")]
+predictors <- air_data[, c("manu", "popul","precip", "predays", "temp")]
 response <- air_data$pollution_level
 ```
 
