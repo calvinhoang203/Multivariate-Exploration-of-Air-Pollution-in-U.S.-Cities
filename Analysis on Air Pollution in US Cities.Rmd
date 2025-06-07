@@ -291,3 +291,62 @@ ggplot(df_long, aes(x = PC, y = Variable)) +
   )
 ```
 
+
+
+## START OF QDA and LDA
+
+
+
+```{r}
+air_data$pollution_level <- cut(air_data$SO2,
+                                breaks = quantile(air_data$SO2, probs = c(0, 0.33, 0.66, 1)),
+                                labels = c("low", "medium", "high"),
+                                include.lowest = TRUE)
+
+print(air_data$pollution_level)
+table(air_data$pollution_level)
+
+# Visualize the distribution of pollution levels
+barplot(table(air_data$pollution_level), 
+        col = c("blue", "red", "lightgreen"),
+        main = "Distribution of Pollution Levels",
+        xlab = "Pollution Level",
+        ylab = "Number of Cities")
+```
+```{r}
+predictors <- air_data[, c("manu", "popul","precip", "predays")]
+response <- air_data$pollution_level
+```
+
+```{r}
+set.seed(100)
+train_idx <- sample(1:nrow(air_data), 0.8 * nrow(air_data))
+train_X <- predictors[train_idx, ]
+train_y <- response[train_idx]
+test_X <- predictors[-train_idx, ]
+test_y <- response[-train_idx]
+
+```
+
+```{r}
+library(MASS)
+
+# LDA
+lda_model <- lda(train_y ~ ., data = data.frame(train_X, train_y))
+lda_pred <- predict(lda_model, newdata = test_X)$class
+
+# QDA
+qda_model <- qda(train_y ~ ., data = data.frame(train_X, train_y))
+qda_pred <- predict(qda_model, newdata = test_X)$class
+
+```
+
+```{r}
+lda_acc <- mean(lda_pred == test_y)
+cat("LDA Accuracy:", round(lda_acc * 100, 2), "%\n")
+
+qda_acc <- mean(qda_pred == test_y)
+cat("QDA Accuracy:", round(qda_acc * 100, 2), "%\n")
+```
+
+
